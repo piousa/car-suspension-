@@ -1,0 +1,1901 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maths Assignment — Car Suspension Dynamics</title>
+
+  <!-- KaTeX for pristine math rendering -->
+  <link rel="stylesheet" href="katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+  <!-- Three.js & OrbitControls for real 3D suspension simulation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <!-- Google Fonts: Manrope, Inter, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+ <!-- ─── TOP EDITABLE PROJECT METADATA BANNER ─── -->
+  <div class="project-banner">
+    <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+      <div class="project-meta-item">
+        <span class="project-meta-label">Project:</span>
+        <span class="project-meta-val" id="meta-title">Maths Assignment — Car Suspension Dynamics &amp; 2nd-Order ODEs</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── NAVIGATION BAR ─── -->
+  <nav class="nav">
+    <a href="#hero" class="nav-brand">
+      <div class="nav-logo-icon">M</div>
+      <div class="nav-logo-text">Maths<span> Assignment</span></div>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#lab" class="active">Simulation</a></li>
+      <li><a href="#mechanism">Mechanism</a></li>
+      <li><a href="#damping">3-Way Comparison</a></li>
+      <li><a href="#shock-absorber">Shock Cutaway</a></li>
+      <li><a href="#math">Mathematics</a></li>
+      <li><a href="#resonance">Resonance</a></li>
+      <li><a href="#architecture">Suspension Types</a></li>
+      <li><a href="#code">Octave RK4</a></li>
+    </ul>
+  </nav>
+       <!-- ─── HERO SECTION ─── -->
+  <section id="hero" class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
+
+    <div class="hero-eyebrow">Mathematics Assignment · Automotive Dynamics</div>
+
+    <h1>WHY DOES A CAR<br><span>STOP BOUNCING?</span></h1>
+
+    <p class="hero-sub">
+      <strong>A spring stores energy.</strong><br>
+      <strong>A damper removes it.</strong><br>
+      One differential equation determines how the car responds.
+    </p>
+
+    <div class="hero-buttons">
+      <button class="btn-primary" onclick="document.getElementById('lab').scrollIntoView({behavior:'smooth'})">
+        Enter the Simulation
+      </button>
+      <button class="btn-secondary" onclick="document.getElementById('math').scrollIntoView({behavior:'smooth'})">
+        See the Mathematics
+      </button>
+    </div>
+
+    <div class="hero-tags">
+      <span>QUARTER-CAR MODEL</span>
+      <span>SECOND-ORDER ODE</span>
+      <span>DAMPING DYNAMICS</span>
+      <span>RK4 NUMERICAL SOLVER</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── SECTION 1: CAR SUSPENSION DYNAMICS SIMULATION ─── -->
+  <section id="lab" class="section-full">
+    <div style="max-width:1420px;margin:0 auto;padding:0 1rem;">
+      <div class="section-header">
+        <div class="section-eyebrow">Second-Order Differential Equations · Numerical RK4</div>
+        <h2>Maths Assignment: <span>Car Suspension Dynamics</span></h2>
+        <p class="section-sub">
+          The mechanical assembly and graphs are synchronously driven by Runge-Kutta 4 numerical integration of \(m x'' + c x' + k x = F(t)\).
+        </p>
+      </div>
+
+      <div class="lab-layout">
+        <!-- LEFT COLUMN: 3D/2D Viewport & Graphs -->
+        <div>
+          <!-- Preset Buttons -->
+          <div class="preset-buttons">
+            <button class="preset-btn under" id="btn-under" onclick="applyPreset('under')">
+              Underdamped (c=8)
+            </button>
+            <button class="preset-btn active" id="btn-crit" onclick="applyPreset('crit')">
+              Critically Damped (c=32) ★
+            </button>
+            <button class="preset-btn over" id="btn-over" onclick="applyPreset('over')">
+              Overdamped (c=40)
+            </button>
+            <button class="preset-btn" id="btn-zero" onclick="applyPreset('zero')" style="border-color:rgba(248,113,113,0.4);color:var(--accent-red);">
+              Zero Damping (c=0)
+            </button>
+          </div>
+
+          <!-- Playback & Inspection Controls -->
+          <div class="playback-controls">
+            <button class="play-btn active" id="play-btn" onclick="togglePlay()">⏸ PAUSE</button>
+            <button class="play-btn" onclick="restartSim()">↺ RESTART</button>
+            <button class="play-btn" id="slow-btn" onclick="toggleSlow()">🐢 SLOW MOTION</button>
+            <button class="play-btn active" id="force-btn" onclick="toggleForce()">⚡ FORCES</button>
+            <button class="play-btn" id="road-btn" onclick="cycleRoad()">🛣 ROAD: FLAT</button>
+          </div>
+
+          <!-- 3D / 2D VIEWPORT CONTAINER -->
+          <div class="suspension-viewport-card" id="susp-viewport-wrapper">
+            <!-- 3D Three.js Container -->
+            <div id="three-canvas-container"></div>
+            <!-- 2D Canvas Blueprint (Hidden when 3D is active) -->
+            <canvas id="susp-canvas" style="display:none;"></canvas>
+
+            <!-- 3D HUD Top Bar -->
+            <div class="viewport-hud-top">
+              <div class="hud-tag">
+                <div class="hud-tag-dot"></div>
+                <span id="viewport-mode-label">3D View Mode</span>
+              </div>
+
+              <!-- View Mode Toggle: 3D vs 2D CAD Blueprint -->
+              <div class="viewport-mode-toggle">
+                <button class="mode-toggle-btn active" id="toggle-3d-btn" onclick="setViewMode('3d')">3D Model</button>
+                <button class="mode-toggle-btn" id="toggle-2d-btn" onclick="setViewMode('2d')">2D Blueprint</button>
+              </div>
+
+              <!-- Live Damping Regime Badge -->
+              <div id="regime-badge" class="regime-badge regime-crit">
+                ● CRITICALLY DAMPED
+              </div>
+            </div>
+
+            <!-- 3D Floating Technical Callout Labels -->
+            <div class="annotation-marker" id="ann-body">BODY MASS <span>m</span></div>
+            <div class="annotation-marker" id="ann-spring">SPRING <span>k</span></div>
+            <div class="annotation-marker" id="ann-damper">DAMPER <span>c</span></div>
+            <div class="annotation-marker" id="ann-wheel">WHEEL &amp; TIRE</div>
+
+            <!-- 3D Camera & Inspection HUD Buttons -->
+            <div class="viewport-hud-controls" id="three-controls-hud">
+              <button class="hud-btn" id="btn-exploded" onclick="toggleExplodedView()">Exploded View</button>
+              <button class="hud-btn" id="btn-cutaway" onclick="toggleCutawayView()">Cutaway Damper</button>
+              <button class="hud-btn" id="btn-autorotate" onclick="toggleAutoRotate()">Auto Rotate</button>
+              <button class="hud-btn" onclick="ThreeSuspension.setCameraView('side')">Side (X)</button>
+              <button class="hud-btn" onclick="ThreeSuspension.setCameraView('front')">Front (Z)</button>
+              <button class="hud-btn" onclick="ThreeSuspension.setCameraView('rear')">Rear</button>
+              <button class="hud-btn" onclick="ThreeSuspension.setCameraView('iso')">Isometric</button>
+            </div>
+          </div>
+
+          <!-- Live Physical State Telemetry Overlays -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;margin:1.25rem 0;">
+            <div class="data-panel" style="margin:0;">
+              <div class="data-panel-title">Displacement</div>
+              <div style="font-family:var(--font-mono);font-size:1.4rem;font-weight:700;color:var(--accent-orange);" id="live-disp">0.0000</div>
+              <div style="font-size:0.68rem;color:var(--text-muted);">\(x(t)\) meters</div>
+            </div>
+            <div class="data-panel" style="margin:0;">
+              <div class="data-panel-title">Body Velocity</div>
+              <div style="font-family:var(--font-mono);font-size:1.4rem;font-weight:700;color:var(--accent-blue);" id="live-vel">0.6000</div>
+              <div style="font-size:0.68rem;color:var(--text-muted);">\(x'(t)\) m/s</div>
+            </div>
+            <div class="data-panel" style="margin:0;">
+              <div class="data-panel-title">Spring Force</div>
+              <div style="font-family:var(--font-mono);font-size:1.4rem;font-weight:700;color:var(--accent-green);" id="live-fs">0.00</div>
+              <div style="font-size:0.68rem;color:var(--text-muted);">\(F_s = kx\) (N)</div>
+            </div>
+            <div class="data-panel" style="margin:0;">
+              <div class="data-panel-title">Damper Force</div>
+              <div style="font-family:var(--font-mono);font-size:1.4rem;font-weight:700;color:var(--accent-purple);" id="live-fd">19.20</div>
+              <div style="font-size:0.68rem;color:var(--text-muted);">\(F_d = cx'\) (N)</div>
+            </div>
+          </div>
+
+          <!-- Live Displacement Response Graph -->
+          <div class="graph-wrapper" style="margin-bottom:1.25rem;">
+            <div class="graph-title">
+              <span>DISPLACEMENT \(x(t)\) vs TIME · RK4 Synchronous Solution</span>
+              <span style="font-size:0.65rem;color:var(--accent-orange);" id="peak-settle-info">Peak: 0.0276m | Settling: 0.72s</span>
+            </div>
+            <canvas id="disp-graph" class="graph-canvas" height="190"></canvas>
+          </div>
+
+          <!-- Velocity & Phase Portrait Graphs -->
+          <div class="two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+            <div class="graph-wrapper">
+              <div class="graph-title">VELOCITY \(x'(t)\) vs TIME</div>
+              <canvas id="vel-graph" class="graph-canvas" height="160"></canvas>
+            </div>
+            <div class="graph-wrapper">
+              <div class="graph-title">PHASE PORTRAIT \(x'(t)\) vs \(x(t)\)</div>
+              <canvas id="phase-graph" class="graph-canvas" height="160"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Engineering Parameters & Telemetry -->
+        <div>
+          <div class="controls-panel">
+            <div class="controls-panel-title">
+              <span>▸ System Parameters</span>
+              <span style="font-size:0.65rem;color:var(--accent-orange);cursor:pointer;" onclick="resetSim()">RESET DEFAULTS</span>
+            </div>
+
+            <!-- Damping Coefficient (c) -->
+            <div class="control-group">
+              <div class="control-label">
+                <div class="control-name"><span class="sym">c</span> Damping Coefficient</div>
+                <div class="control-value" id="val-c">32</div>
+              </div>
+              <div class="control-desc">Hydraulic viscous resistance • N·s/m</div>
+              <input type="range" id="sl-c" min="0" max="80" step="0.5" value="32" oninput="updateParam('c',this.value)">
+              <div class="control-range"><span>0 (No Damper)</span><span>32 (c_crit)</span><span>80 N·s/m</span></div>
+            </div>
+
+            <!-- Sprung Mass (m) -->
+            <div class="control-group">
+              <div class="control-label">
+                <div class="control-name"><span class="sym">m</span> Sprung Body Mass</div>
+                <div class="control-value" id="val-m">2</div>
+              </div>
+              <div class="control-desc">Chassis / vehicle body mass • kg</div>
+              <input type="range" id="sl-m" min="0.5" max="6" step="0.1" value="2" oninput="updateParam('m',this.value)">
+              <div class="control-range"><span>0.5 kg</span><span>2.0 kg</span><span>6.0 kg</span></div>
+            </div>
+
+            <!-- Spring Stiffness (k) -->
+            <div class="control-group">
+              <div class="control-label">
+                <div class="control-name"><span class="sym">k</span> Spring Stiffness</div>
+                <div class="control-value" id="val-k">128</div>
+              </div>
+              <div class="control-desc">Helical steel spring constant • N/m</div>
+              <input type="range" id="sl-k" min="40" max="300" step="2" value="128" oninput="updateParam('k',this.value)">
+              <div class="control-range"><span>40 N/m (Soft)</span><span>128 N/m</span><span>300 N/m (Stiff)</span></div>
+            </div>
+
+            <!-- Initial Bump Velocity (v0) -->
+            <div class="control-group">
+              <div class="control-label">
+                <div class="control-name"><span class="sym">v₀</span> Initial Bump Velocity</div>
+                <div class="control-value" id="val-v0">0.6</div>
+              </div>
+              <div class="control-desc">Road impulse impact velocity • m/s</div>
+              <input type="range" id="sl-v0" min="0.1" max="1.5" step="0.05" value="0.6" oninput="updateParam('v0',this.value)">
+              <div class="control-range"><span>0.1 m/s</span><span>0.6 m/s</span><span>1.5 m/s (Curb)</span></div>
+            </div>
+
+            <!-- Road Force Amplitude (F0) -->
+            <div class="control-group">
+              <div class="control-label">
+                <div class="control-name"><span class="sym">F₀</span> Road Excitation Force</div>
+                <div class="control-value" id="val-F0">0</div>
+              </div>
+              <div class="control-desc">Corrugated road harmonic force • N</div>
+              <input type="range" id="sl-F0" min="0" max="40" step="1" value="0" oninput="updateParam('F0',this.value)">
+              <div class="control-range"><span>0 (Free Vibration)</span><span>20 N</span><span>40 N</span></div>
+            </div>
+
+            <!-- Road Frequency (omega) -->
+            <div class="control-group">
+              <div class="control-label">
+                <div class="control-name"><span class="sym">ω</span> Road Surface Frequency</div>
+                <div class="control-value" id="val-omega">5</div>
+              </div>
+              <div class="control-desc">Washboard road frequency • rad/s</div>
+              <input type="range" id="sl-omega" min="1" max="30" step="0.5" value="5" oninput="updateParam('omega',this.value)">
+              <div class="control-range"><span>1 rad/s</span><span>ωₙ = 8.0</span><span>30 rad/s</span></div>
+            </div>
+
+            <!-- Calculated Analytical Properties -->
+            <div class="data-panel">
+              <div class="data-panel-title">
+                <span>▸ Calculated Characteristics</span>
+                <span style="color:var(--accent-orange);font-size:0.6rem;">SECOND-ORDER ODE</span>
+              </div>
+              <div class="data-row">
+                <span class="data-key">Critical Damping \(c_{crit} = 2\sqrt{mk}\)</span>
+                <span class="data-val" id="calc-ccrit">32.00 N·s/m</span>
+              </div>
+              <div class="data-row">
+                <span class="data-key">Natural Frequency \(\omega_n = \sqrt{k/m}\)</span>
+                <span class="data-val blue" id="calc-wn">8.000 rad/s</span>
+              </div>
+              <div class="data-row">
+                <span class="data-key">Damping Ratio \(\zeta = c/(2\sqrt{mk})\)</span>
+                <span class="data-val green" id="calc-zeta">1.000</span>
+              </div>
+              <div class="data-row">
+                <span class="data-key">Discriminant \(D = c^2 - 4mk\)</span>
+                <span class="data-val" id="calc-disc">0.00</span>
+              </div>
+              <div class="data-row">
+                <span class="data-key">Frequency Ratio \(\omega / \omega_n\)</span>
+                <span class="data-val purple" id="calc-ratio">0.625</span>
+              </div>
+            </div>
+
+            <!-- Dynamic Discriminant Slider Gauge -->
+            <div style="margin-top:1.25rem;">
+              <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.4rem;">
+                Damping Regime Indicator
+              </div>
+              <div class="discriminant-bar">
+                <div class="discriminant-marker" id="disc-marker" style="left:50%;"></div>
+              </div>
+              <div class="discriminant-labels">
+                <span style="color:var(--accent-blue);">D &lt; 0 Underdamped</span>
+                <span style="color:var(--accent-green);font-weight:700;">D = 0 Critical ★</span>
+                <span style="color:var(--accent-purple);">D &gt; 0 Overdamped</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── SECTION 2: THE 10-STEP REAL SUSPENSION MECHANISM ─── -->
+  <section id="mechanism" class="section">
+    <div class="section-header">
+      <div class="section-eyebrow">Physical Kinematic Chain</div>
+      <h2>Real Suspension <span>Mechanism</span></h2>
+      <p class="section-sub">
+        A car suspension is a coordinated multi-body mechanical linkage that converts impulsive road displacement into controlled fluid dissipation.
+      </p>
+    </div>
+
+    <div class="mechanism-chain">
+      <div class="mech-step-card">
+        <div class="mech-step-num">STEP 01</div>
+        <div class="mech-step-title">Tire Hits Road Bump</div>
+        <div class="mech-step-desc">The rubber tire absorbs high-frequency micro-roughness and transmits an upward vertical impulse force to the wheel rim.</div>
+      </div>
+      <div class="mech-step-card">
+        <div class="mech-step-num">STEP 02</div>
+        <div class="mech-step-title">Wheel Hub Moves Up</div>
+        <div class="mech-step-desc">The steering knuckle and hub rise along with the wheel spindle, transferring force into the suspension linkage.</div>
+      </div>
+      <div class="mech-step-card">
+        <div class="mech-step-num">STEP 03</div>
+        <div class="mech-step-title">Control Arm Pivots</div>
+        <div class="mech-step-desc">The lower A-arm wishbone rotates upward around rubber subframe bushings, guiding vertical wheel travel.</div>
+      </div>
+      <div class="mech-step-card">
+        <div class="mech-step-num">STEP 04</div>
+        <div class="mech-step-title">Spring Compresses</div>
+        <div class="mech-step-desc">The coil spring compresses by displacement \(x(t)\), instantly storing potential energy \(U = \frac{1}{2}kx^2\).</div>
+      </div>
+      <div class="mech-step-card" style="border-top-color:var(--accent-blue);">
+        <div class="mech-step-num" style="color:var(--accent-blue);">STEP 05</div>
+        <div class="mech-step-title">Damper Piston Travels</div>
+        <div class="mech-step-desc">The chrome shock absorber rod pushes the internal piston head through the hydraulic fluid chamber at velocity \(x'(t)\).</div>
+      </div>
+      <div class="mech-step-card" style="border-top-color:var(--accent-blue);">
+        <div class="mech-step-num" style="color:var(--accent-blue);">STEP 06</div>
+        <div class="mech-step-title">Damper Resists Velocity</div>
+        <div class="mech-step-desc">Fluid forced through microscopic valve orifices generates viscous drag proportional to velocity: \(F_d = cx'\).</div>
+      </div>
+      <div class="mech-step-card">
+        <div class="mech-step-num">STEP 07</div>
+        <div class="mech-step-title">Vehicle Body Responds</div>
+        <div class="mech-step-desc">The chassis body mass \(m\) accelerates according to net force: \(mx'' = F(t) - kx - cx'\).</div>
+      </div>
+      <div class="mech-step-card">
+        <div class="mech-step-num">STEP 08</div>
+        <div class="mech-step-title">Spring Rebounds</div>
+        <div class="mech-step-desc">The compressed spring expands, releasing stored potential energy back into the unsprung and sprung masses.</div>
+      </div>
+      <div class="mech-step-card" style="border-top-color:var(--accent-green);">
+        <div class="mech-step-num" style="color:var(--accent-green);">STEP 09</div>
+        <div class="mech-step-title">Energy Converted to Heat</div>
+        <div class="mech-step-desc">Hydraulic fluid friction absorbs mechanical kinetic energy and permanently converts it into low-grade thermal heat.</div>
+      </div>
+      <div class="mech-step-card" style="border-top-color:var(--accent-green);">
+        <div class="mech-step-num" style="color:var(--accent-green);">STEP 10</div>
+        <div class="mech-step-title">Equilibrium Restored</div>
+        <div class="mech-step-desc">With damping removing energy on each cycle, oscillation decays and the car body settles smoothly back to ride height.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── SECTION 3: THREE-WAY SIMULTANEOUS DAMPING COMPARISON ─── -->
+  <section id="damping" class="section">
+    <div class="section-header">
+      <div class="section-eyebrow">Simultaneous Transient Response</div>
+      <h2>Same Road Bump.<br><span>Three Different Behaviors.</span></h2>
+      <p class="section-sub">
+        Observe three identical quarter-car suspensions subjected to the exact same impulse at the exact same millisecond. Damping \(c\) dictates the entire qualitative ride.
+      </p>
+    </div>
+
+    <div style="text-align:center;margin-bottom:1.5rem;">
+      <button class="btn-primary" onclick="triggerComparisonBump()" style="margin-right:1rem;">▶ TRIGGER ROAD BUMP NOW</button>
+      <button class="btn-secondary" onclick="resetComparison()">↺ RESET VIEW</button>
+    </div>
+
+    <div class="comparison-grid">
+      <!-- UNDERDAMPED -->
+      <div class="comparison-card">
+        <div class="comp-label" style="color:var(--accent-blue);">Underdamped · c = 8 N·s/m</div>
+        <div class="comp-title" style="color:var(--accent-blue);">BOUNCY</div>
+        <div class="comp-equation">\(D = c^2 - 4mk = -960 < 0,\quad \zeta = 0.25\)</div>
+        <div class="comp-canvas-wrapper">
+          <canvas id="comp-canvas-under" width="400" height="210"></canvas>
+        </div>
+        <p style="font-size:0.8rem;color:var(--text-secondary);margin-top:1rem;line-height:1.7;">
+          Like a vehicle with worn shock absorbers: the car bounces repeatedly across multiple overshoot cycles before settling.
+        </p>
+        <div class="eq-block" style="border-left-color:var(--accent-blue);margin-top:0.75rem;padding:0.75rem 1rem;">
+          <div style="font-size:0.75rem;color:var(--text-primary);">
+            \(x(t) = 0.0775 e^{-2t} \sin(7.746t)\)
+          </div>
+        </div>
+      </div>
+
+      <!-- CRITICALLY DAMPED -->
+      <div class="comparison-card highlight">
+        <div class="comp-label" style="color:var(--accent-green);">Critically Damped · c = 32 N·s/m ★</div>
+        <div class="comp-title" style="color:var(--accent-green);">OPTIMAL RETURN</div>
+        <div class="comp-equation">\(D = c^2 - 4mk = 0,\quad \zeta = 1.00\)</div>
+        <div class="comp-canvas-wrapper">
+          <canvas id="comp-canvas-crit" width="400" height="210"></canvas>
+        </div>
+        <p style="font-size:0.8rem;color:var(--text-secondary);margin-top:1rem;line-height:1.7;">
+          The automotive engineering ideal: achieves equilibrium in the absolute minimum possible settling time without a single oscillatory bounce.
+        </p>
+        <div class="eq-block" style="border-left-color:var(--accent-green);margin-top:0.75rem;padding:0.75rem 1rem;">
+          <div style="font-size:0.75rem;color:var(--text-primary);">
+            \(x(t) = 0.6t e^{-8t}\)
+          </div>
+        </div>
+      </div>
+
+      <!-- OVERDAMPED -->
+      <div class="comparison-card">
+        <div class="comp-label" style="color:var(--accent-purple);">Overdamped · c = 40 N·s/m</div>
+        <div class="comp-title" style="color:var(--accent-purple);">SLOW RESPONSE</div>
+        <div class="comp-equation">\(D = c^2 - 4mk = 576 > 0,\quad \zeta = 1.25\)</div>
+        <div class="comp-canvas-wrapper">
+          <canvas id="comp-canvas-over" width="400" height="210"></canvas>
+        </div>
+        <p style="font-size:0.8rem;color:var(--text-secondary);margin-top:1rem;line-height:1.7;">
+          Excessive fluid friction prevents bouncing, but return to equilibrium is sluggish. Tires lose road contact over rapid sequential bumps.
+        </p>
+        <div class="eq-block" style="border-left-color:var(--accent-purple);margin-top:0.75rem;padding:0.75rem 1rem;">
+          <div style="font-size:0.75rem;color:var(--text-primary);">
+            \(x(t) = 0.05(e^{-4t} - e^{-16t})\)
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── SECTION 4: WHAT IS INSIDE A SHOCK ABSORBER? (CUTAWAY) ─── -->
+  <section id="shock-absorber" class="section">
+    <div class="section-header">
+      <div class="section-eyebrow">Hydraulic Valve Engineering</div>
+      <h2>What Is Inside a <span>Shock Absorber?</span></h2>
+      <p class="section-sub">
+        Shock absorbers do not support vehicle weight — springs do. Shock absorbers are velocity-sensitive hydraulic dampers that convert kinetic motion into heat.
+      </p>
+    </div>
+
+    <div class="shock-section-grid">
+      <!-- Cutaway Visualizer Canvas -->
+      <div class="shock-canvas-card">
+        <canvas id="shock-cutaway-canvas"></canvas>
+      </div>
+
+      <!-- Technical Explanation -->
+      <div>
+        <div style="font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.18em;color:var(--accent-blue);text-transform:uppercase;margin-bottom:0.75rem;">
+          ▸ Viscous Fluid Dynamics
+        </div>
+        <h3 style="font-family:var(--font-heading);font-size:1.8rem;font-weight:800;margin-bottom:1rem;color:#fff;">
+          Mechanical Motion $\rightarrow$ Hydraulic Shear $\rightarrow$ Heat
+        </h3>
+        <p style="font-size:0.92rem;color:var(--text-secondary);line-height:1.8;margin-bottom:1.5rem;">
+          As the suspension compresses (bump) or extends (rebound), the chrome piston rod drives the piston head through a cylinder filled with hydraulic mineral oil. Fluid must squeeze through precision spring-loaded valve orifices.
+        </p>
+
+        <div class="eq-block" style="border-left-color:var(--accent-blue);">
+          <div class="eq-label">Hydraulic Damping Force Equation</div>
+          <div style="font-size:1.15rem;color:var(--accent-blue);">
+            \(F_d = c \cdot x'(t)\)
+          </div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.4rem;">
+            Instantaneous Dissipation Power: \(P = F_d \cdot x' = c \cdot (x')^2\)
+          </div>
+        </div>
+
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:0.75rem;margin-top:1.5rem;">
+          <li style="display:flex;gap:0.75rem;font-size:0.85rem;color:var(--text-secondary);">
+            <span style="color:var(--accent-blue);font-weight:bold;">◆</span>
+            <span><strong>Compression Stroke:</strong> Piston moves downward, fluid passes through compression valving. Softer damping allows the wheel to track upward bumps.</span>
+          </li>
+          <li style="display:flex;gap:0.75rem;font-size:0.85rem;color:var(--text-secondary);">
+            <span style="color:var(--accent-blue);font-weight:bold;">◆</span>
+            <span><strong>Rebound Stroke:</strong> Spring attempts to violently expand; rebound valves restrict return flow (\(3\times\) stiffer) to eliminate chassis bounce.</span>
+          </li>
+          <li style="display:flex;gap:0.75rem;font-size:0.85rem;color:var(--text-secondary);">
+            <span style="color:var(--accent-blue);font-weight:bold;">◆</span>
+            <span><strong>Thermal Dissipation:</strong> During spirited driving on rough terrain, damper temperatures can reach \(100^\circ\text{C}\) as kinetic energy is shed to ambient air.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── SECTION 5: MATHEMATICS & DERIVATION ─── -->
+  <section id="math" class="section">
+    <div class="section-header">
+      <div class="section-eyebrow">Analytical Formulation</div>
+      <h2>From Car Mechanism to<br><span>Differential Equation</span></h2>
+      <p class="section-sub">
+        Applying Newton's Second Law to the quarter-car free-body diagram directly yields the governing second-order linear differential equation.
+      </p>
+    </div>
+
+    <!-- Master Equation Callout -->
+    <div style="text-align:center;margin-bottom:3rem;">
+      <div style="background:var(--bg-card);border:1px solid var(--border-accent);padding:2.5rem;display:inline-block;box-shadow:0 15px 40px rgba(0,0,0,0.5);">
+        <div style="font-size:clamp(1.5rem,3.2vw,2.4rem);font-family:var(--font-mono);color:var(--text-primary);margin-bottom:1.25rem;">
+          \[ m x'' + c x' + k x = F(t) \]
+        </div>
+        <div style="display:flex;gap:2rem;flex-wrap:wrap;justify-content:center;font-family:var(--font-mono);">
+          <div>
+            <div style="color:var(--accent-orange);font-weight:700;font-size:1.1rem;">\(m x''\)</div>
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:0.25rem;">Inertia Force</div>
+          </div>
+          <div style="color:var(--text-muted);font-size:1.4rem;">+</div>
+          <div>
+            <div style="color:var(--accent-blue);font-weight:700;font-size:1.1rem;">\(c x'\)</div>
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:0.25rem;">Damping Drag</div>
+          </div>
+          <div style="color:var(--text-muted);font-size:1.4rem;">+</div>
+          <div>
+            <div style="color:var(--accent-green);font-weight:700;font-size:1.1rem;">\(k x\)</div>
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:0.25rem;">Spring Restoring</div>
+          </div>
+          <div style="color:var(--text-muted);font-size:1.4rem;">=</div>
+          <div>
+            <div style="color:var(--accent-red);font-weight:700;font-size:1.1rem;">\(F(t)\)</div>
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:0.25rem;">Road Input</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auxiliary Equation & Discriminant -->
+    <div class="two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2.5rem;">
+      <div style="background:var(--bg-card);border:1px solid var(--border);padding:2rem;">
+        <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:0.75rem;">
+          ▸ Auxiliary Characteristic Equation
+        </div>
+        <div style="font-size:1.2rem;font-family:var(--font-mono);color:#fff;margin-bottom:1rem;">
+          \[ m r^2 + c r + k = 0 \]
+        </div>
+        <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.7;">
+          Applying the quadratic formula gives the characteristic roots:
+        </p>
+        <div style="font-size:1.1rem;font-family:var(--font-mono);color:var(--accent-orange);margin:0.75rem 0;">
+          \[ r = \frac{-c \pm \sqrt{D}}{2m} \quad\text{where}\quad D = c^2 - 4mk \]
+        </div>
+      </div>
+
+      <div style="background:var(--bg-card);border:1px solid var(--border);padding:2rem;">
+        <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:0.75rem;">
+          ▸ The Balance Point: Critical Damping
+        </div>
+        <div style="font-size:1.2rem;font-family:var(--font-mono);color:var(--accent-green);margin-bottom:1rem;">
+          \[ c_{crit} = 2\sqrt{mk} \]
+        </div>
+        <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.7;">
+          For this project's parameters (\(m=2\text{ kg},\, k=128\text{ N/m}\)):
+        </p>
+        <div style="font-size:1.05rem;font-family:var(--font-mono);color:#fff;margin:0.75rem 0;">
+          \[ c_{crit} = 2\sqrt{2 \times 128} = 2\sqrt{256} = 32\text{ N}\cdot\text{s/m} \]
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── SECTION 6: PERIODIC ROAD EXCITATION & RESONANCE ─── -->
+  <section id="resonance" class="section">
+    <div class="section-header">
+      <div class="section-eyebrow">Harmonic Forcing Dynamics</div>
+      <h2>Find the Frequency That<br><span>Makes the Car Bounce</span></h2>
+      <p class="section-sub">
+        Driving over a corrugated or washboard gravel road applies periodic forcing \(F(t) = F_0 \cos(\omega t)\). When road frequency approaches natural frequency \(\omega_n\), steady-state amplitude spikes dangerously.
+      </p>
+    </div>
+
+    <!-- Resonance Gauge -->
+    <div class="resonance-indicator" id="resonance-indicator" style="max-width:850px;margin:0 auto 2rem;">
+      <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.5rem;">
+        Excitation Frequency Ratio (\(\omega / \omega_n\))
+      </div>
+      <div style="font-family:var(--font-mono);font-size:2.8rem;font-weight:900;" id="res-ratio-display">0.625</div>
+      <div style="font-size:0.9rem;color:var(--text-secondary);font-weight:500;" id="res-status">
+        Safe frequency band — oscillation amplitude remains low.
+      </div>
+    </div>
+
+    <!-- Frequency Sweep Controls -->
+    <div class="controls-panel" style="max-width:850px;margin:0 auto 2rem;">
+      <div class="control-group">
+        <div class="control-label">
+          <div class="control-name"><span class="sym">ω</span> Road Frequency Sweep</div>
+          <div class="control-value" id="res-omega-val">5.0 rad/s</div>
+        </div>
+        <input type="range" id="res-omega" min="1" max="30" step="0.5" value="5" oninput="updateResonance(this.value)">
+        <div class="control-range">
+          <span>1 rad/s</span>
+          <span style="color:var(--accent-green);font-weight:700;">\(\omega_n = 8.0\text{ rad/s}\) (Resonance)</span>
+          <span>30 rad/s</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <div class="control-name"><span class="sym">F₀</span> Road Force Magnitude</div>
+          <div class="control-value" id="res-F0-val">20 N</div>
+        </div>
+        <input type="range" id="res-F0" min="1" max="40" step="1" value="20" oninput="updateResonanceF0(this.value)">
+      </div>
+    </div>
+
+    <!-- Steady-State Response Amplitude Curve -->
+    <div class="graph-wrapper" style="max-width:850px;margin:0 auto 2rem;">
+      <div class="graph-title">
+        <span>STEADY-STATE AMPLITUDE \(X_{ss}\) vs FREQUENCY \(\omega\)</span>
+        <span style="color:var(--accent-orange);">\(X_{ss} = \frac{F_0}{\sqrt{(k - m\omega^2)^2 + (c\omega)^2}}\)</span>
+      </div>
+      <canvas id="freq-graph" height="240"></canvas>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── SECTION 7: REAL CAR SUSPENSION ARCHITECTURES ─── -->
+  <section id="architecture" class="section">
+    <div class="section-header">
+      <div class="section-eyebrow">Automotive Mechanical Layouts</div>
+      <h2>Real Car Suspension <span>Architectures</span></h2>
+      <p class="section-sub">
+        The quarter-car mathematical model represents the vertical motion of any automotive corner. However, production vehicles employ distinct multi-link geometries.
+      </p>
+    </div>
+
+    <!-- Architecture Tabs -->
+    <div class="arch-tabs">
+      <button class="arch-tab-btn active" onclick="switchArch('macpherson')">MacPherson Strut</button>
+      <button class="arch-tab-btn" onclick="switchArch('double-wishbone')">Double Wishbone</button>
+      <button class="arch-tab-btn" onclick="switchArch('multilink')">Multi-Link</button>
+      <button class="arch-tab-btn" onclick="switchArch('torsion')">Torsion Beam</button>
+      <button class="arch-tab-btn" onclick="switchArch('air')">Air Suspension</button>
+    </div>
+
+    <!-- Active Architecture Display Card -->
+    <div class="arch-card-display" id="arch-display">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--accent-orange);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.5rem;" id="arch-badge">
+          MOST COMMON PASSENGER FRONT AXLE
+        </div>
+        <h3 style="font-family:var(--font-heading);font-size:2rem;font-weight:900;color:#fff;margin-bottom:1rem;" id="arch-title">
+          MacPherson Strut
+        </h3>
+        <p style="font-size:0.92rem;color:var(--text-secondary);line-height:1.8;margin-bottom:1.5rem;" id="arch-desc">
+          Invented by Earle S. MacPherson at Ford in the late 1940s. Combines the shock absorber, spring, and steering knuckle into a single compact vertical load-bearing strut assembly, supported by one lower control arm.
+        </p>
+
+        <div class="two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+          <div style="background:var(--bg-tertiary);padding:1rem;border-left:2px solid var(--accent-green);">
+            <div style="font-size:0.75rem;font-weight:700;color:var(--accent-green);margin-bottom:0.25rem;">ADVANTAGES</div>
+            <div style="font-size:0.78rem;color:var(--text-secondary);" id="arch-pros">Low manufacturing cost, ultra-compact packaging leaving room for transverse engines, low weight.</div>
+          </div>
+          <div style="background:var(--bg-tertiary);padding:1rem;border-left:2px solid var(--accent-red);">
+            <div style="font-size:0.75rem;font-weight:700;color:var(--accent-red);margin-bottom:0.25rem;">DISADVANTAGES</div>
+            <div style="font-size:0.78rem;color:var(--text-secondary);" id="arch-cons">Camber angle changes with body roll; transmits strut vibration directly into top unibody sheet metal.</div>
+          </div>
+        </div>
+
+        <div style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-muted);">
+          Typical Applications: <span style="color:#fff;" id="arch-apps">BMW 3-Series, Porsche 911 (Front), Toyota Corolla</span>
+        </div>
+      </div>
+
+      <!-- Schematic Representation -->
+      <div style="background:var(--bg-tertiary);border:1px solid var(--border);padding:2rem;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;">
+        <div style="font-family:var(--font-mono);font-size:1.1rem;color:var(--accent-orange);margin-bottom:1rem;" id="arch-diagram-title">
+          MacPherson Strut Kinematics
+        </div>
+        <div style="font-size:0.85rem;color:var(--text-secondary);max-width:340px;line-height:1.7;" id="arch-diagram-text">
+          Direct vertical alignment where damper tube acts as the structural kingpin. Single lower A-arm wishbone controls lateral location.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── SECTION 8: "BREAK THE SUSPENSION" EXPERIMENTAL PLAYGROUND ─── -->
+  <section id="break-section" class="section">
+    <div class="section-header">
+      <div class="section-eyebrow" style="color:var(--accent-red);">Extreme Physics Testing</div>
+      <h2>Break the <span>Suspension!</span></h2>
+      <p class="section-sub">
+        Explore mathematically extreme edge cases. See what happens when physical constraints break down and differential equations yield catastrophic responses.
+      </p>
+    </div>
+
+    <div class="break-grid">
+      <!-- Experiment 1: c = 0 -->
+      <div class="break-card" onclick="triggerBreakMode('zero')">
+        <div class="break-badge">CATASTROPHE 01</div>
+        <div class="break-title">Zero Damping (c = 0)</div>
+        <div class="break-desc">
+          Damper fluid completely leaked out. Pure harmonic oscillator \(m x'' + k x = 0\). The car bounces perpetually without decay.
+        </div>
+      </div>
+
+      <!-- Experiment 2: Soft Spring -->
+      <div class="break-card" onclick="triggerBreakMode('soft')">
+        <div class="break-badge">CATASTROPHE 02</div>
+        <div class="break-title">Sponge Suspension</div>
+        <div class="break-desc">
+          Extremely low stiffness (\(k=40\)) and low damping. Severe bottoming out, massive body float, and seasickness.
+        </div>
+      </div>
+
+      <!-- Experiment 3: Rigid Concrete -->
+      <div class="break-card" onclick="triggerBreakMode('stiff')">
+        <div class="break-badge">CATASTROPHE 03</div>
+        <div class="break-title">Welded Concrete</div>
+        <div class="break-desc">
+          Maximum stiffness (\(k=300\)) and massive damping. Zero compliance: road bumps transfer violently directly into chassis unibody.
+        </div>
+      </div>
+
+      <!-- Experiment 4: Highway Resonance -->
+      <div class="break-card" onclick="triggerBreakMode('resonance')">
+        <div class="break-badge">CATASTROPHE 04</div>
+        <div class="break-title">Highway Resonance</div>
+        <div class="break-desc">
+          Road corrugated frequency exactly matches natural frequency (\(\omega = \omega_n = 8.0\)). Massive uncontrolled bouncing amplification.
+        </div>
+      </div>
+
+      <!-- Experiment 5: Pothole Slam -->
+      <div class="break-card" onclick="triggerBreakMode('pothole')">
+        <div class="break-badge">CATASTROPHE 05</div>
+        <div class="break-title">Pothole Slam</div>
+        <div class="break-desc">
+          Maximum vehicle speed and massive impact velocity (\(v_0 = 1.5\text{ m/s}\)). Extreme damper fluid pressures and travel limits.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── SECTION 9: GNU OCTAVE & RK4 COMPUTATIONAL SECTION ─── -->
+  <section id="code" class="section">
+    <div class="section-header">
+      <div class="section-eyebrow">Numerical Mathematics Implementation</div>
+      <h2>From Equation to <span>Simulation</span></h2>
+      <p class="section-sub">
+        Production-quality GNU Octave / MATLAB code implementing the exact 4th-Order Runge-Kutta numerical solver powering this interactive laboratory.
+      </p>
+    </div>
+
+    <div style="max-width:920px;margin:0 auto;">
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyOctaveCode()">COPY CODE</button>
+        <pre id="octave-code-text"><span class="cm">% =========================================================================</span>
+<span class="cm">% CAR SUSPENSION DYNAMICS — QUARTER-CAR MODEL (GNU OCTAVE / MATLAB)</span>
+<span class="cm">% Governed by: m*x'' + c*x' + k*x = F(t)</span>
+<span class="cm">% Numerical Solver: 4th-Order Runge-Kutta (RK4)</span>
+<span class="cm">% =========================================================================</span>
+
+<span class="kw">clear</span>; <span class="kw">clc</span>; <span class="kw">close</span> <span class="kw">all</span>;
+
+<span class="cm">%% 1. Physical Parameters</span>
+m  = <span class="num">2.0</span>;      <span class="cm">% Sprung vehicle body mass [kg]</span>
+k  = <span class="num">128.0</span>;    <span class="cm">% Helical coil spring stiffness [N/m]</span>
+c  = <span class="num">32.0</span>;     <span class="cm">% Damping coefficient [N·s/m] (c_crit = 32)</span>
+v0 = <span class="num">0.6</span>;      <span class="cm">% Initial bump impact velocity [m/s]</span>
+F0 = <span class="num">0.0</span>;      <span class="cm">% Road harmonic force amplitude [N]</span>
+w  = <span class="num">5.0</span>;      <span class="cm">% Road harmonic frequency [rad/s]</span>
+
+<span class="cm">%% 2. Characteristic System Properties</span>
+D      = c^<span class="num">2</span> - <span class="num">4</span>*m*k;
+c_crit = <span class="num">2</span>*<span class="fn">sqrt</span>(m*k);
+wn     = <span class="fn">sqrt</span>(k/m);
+zeta   = c / c_crit;
+
+<span class="fn">fprintf</span>(<span class="str">'--- SYSTEM CHARACTERISTICS ---\n'</span>);
+<span class="fn">fprintf</span>(<span class="str">'Discriminant D     = %8.2f\n'</span>, D);
+<span class="fn">fprintf</span>(<span class="str">'Critical Damping   = %8.2f N*s/m\n'</span>, c_crit);
+<span class="fn">fprintf</span>(<span class="str">'Natural Frequency  = %8.3f rad/s\n'</span>, wn);
+<span class="fn">fprintf</span>(<span class="str">'Damping Ratio zeta = %8.3f\n'</span>, zeta);
+
+<span class="cm">%% 3. State-Space Vector Formulation</span>
+<span class="cm">% State vector y = [x1; x2] where x1 = x (displacement), x2 = x' (velocity)</span>
+f = @(t, y) [ y(<span class="num">2</span>);
+              (F0*<span class="fn">cos</span>(w*t) - c*y(<span class="num">2</span>) - k*y(<span class="num">1</span>)) / m ];
+
+<span class="cm">%% 4. Runge-Kutta 4th Order (RK4) Time Integration</span>
+dt = <span class="num">0.001</span>;       <span class="cm">% Step size: 1 millisecond</span>
+T  = <span class="num">5.0</span>;         <span class="cm">% Total duration: 5 seconds</span>
+t  = <span class="num">0</span>:dt:T;
+N  = <span class="fn">length</span>(t);
+
+y = <span class="fn">zeros</span>(<span class="num">2</span>, N);
+y(:, <span class="num">1</span>) = [<span class="num">0.0</span>; v0];  <span class="cm">% Initial conditions: x(0)=0, x'(0)=v0</span>
+
+<span class="kw">for</span> i = <span class="num">1</span>:N-<span class="num">1</span>
+    ti = t(i);
+    yi = y(:, i);
+
+    k1 = f(ti,            yi);
+    k2 = f(ti + <span class="num">0.5</span>*dt,   yi + <span class="num">0.5</span>*dt*k1);
+    k3 = f(ti + <span class="num">0.5</span>*dt,   yi + <span class="num">0.5</span>*dt*k2);
+    k4 = f(ti + dt,       yi + dt*k3);
+
+    y(:, i+<span class="num">1</span>) = yi + (dt/<span class="num">6.0</span>)*(k1 + <span class="num">2</span>*k2 + <span class="num">2</span>*k3 + k4);
+<span class="kw">end</span>
+
+x    = y(<span class="num">1</span>, :);
+xdot = y(<span class="num">2</span>, :);
+
+<span class="cm">%% 5. Visualization Plots</span>
+<span class="fn">figure</span>(<span class="str">'Color'</span>, [<span class="num">0.05</span> <span class="num">0.05</span> <span class="num">0.08</span>]);
+<span class="fn">plot</span>(t, x, <span class="str">'Color'</span>, [<span class="num">0.98</span> <span class="num">0.57</span> <span class="num">0.24</span>], <span class="str">'LineWidth'</span>, <span class="num">2</span>);
+<span class="fn">grid</span> <span class="kw">on</span>; <span class="fn">title</span>(<span class="str">'Quarter-Car Displacement x(t)'</span>);</pre>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── SECTION 10: ENGINEERING LIMITATIONS ─── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-eyebrow">Academic Rigor &amp; Modeling Fidelity</div>
+      <h2>The Real Car Is<br><span>More Complicated</span></h2>
+      <p class="section-sub">
+        The single-degree-of-freedom quarter-car model provides essential mathematical intuition, but production vehicle engineering accounts for additional degrees of freedom.
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;">
+      <div style="background:var(--bg-card);border:1px solid var(--border);padding:1.4rem;">
+        <div style="font-weight:700;color:#fff;margin-bottom:0.4rem;">Unsprung Mass &amp; Tire Dynamics</div>
+        <div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.7;">
+          Tires act as pneumatic springs (\(k_t \approx 200,000\text{ N/m}\)). A 2-DOF quarter-car model separates sprung body mass \(m_s\) from wheel/hub unsprung mass \(m_u\).
+        </div>
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);padding:1.4rem;">
+        <div style="font-weight:700;color:#fff;margin-bottom:0.4rem;">Nonlinear Asymmetric Dampers</div>
+        <div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.7;">
+          Real shock absorbers feature asymmetric blow-off shims: rebound damping is typically \(3\times\) to \(4\times\) stiffer than compression to prevent packaging harshness.
+        </div>
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);padding:1.4rem;">
+        <div style="font-weight:700;color:#fff;margin-bottom:0.4rem;">Multi-Axis Pitch &amp; Roll Coupling</div>
+        <div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.7;">
+          Full vehicle dynamics models (7-DOF or 14-DOF) incorporate pitch during longitudinal acceleration/braking and chassis roll mediated by anti-roll sway bars.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── FINAL CINEMATIC WOW SECTION ─── -->
+  <section class="section" style="text-align:center;">
+    <div style="max-width:850px;margin:0 auto;">
+      <div style="font-family:var(--font-mono);font-size:0.75rem;letter-spacing:0.25em;color:var(--accent-orange);text-transform:uppercase;margin-bottom:2rem;">
+        THE UNIFIED SYNTHESIS
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:0.4rem;align-items:center;font-family:var(--font-mono);font-size:0.85rem;color:var(--text-secondary);margin-bottom:2.5rem;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);padding:0.6rem 2rem;">ROAD SURFACE DISTURBANCE</div>
+        <div style="color:var(--accent-orange);">↓</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);padding:0.6rem 2rem;">TIRE &amp; WHEEL HUB TRAVEL</div>
+        <div style="color:var(--accent-orange);">↓</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);padding:0.6rem 2rem;">CONTROL ARM KINEMATICS</div>
+        <div style="color:var(--accent-orange);">↓</div>
+        <div style="background:var(--bg-card);border:1px solid rgba(251,146,60,0.5);color:var(--accent-orange);padding:0.6rem 2rem;">SPRING COMPRESSION · \(F_s = kx\)</div>
+        <div style="color:var(--accent-orange);">↓</div>
+        <div style="background:var(--bg-card);border:1px solid rgba(96,165,250,0.5);color:var(--accent-blue);padding:0.6rem 2rem;">DAMPER VISCOUS DISSIPATION · \(F_d = cx'\)</div>
+        <div style="color:var(--accent-orange);">↓</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);padding:0.6rem 2rem;">CONTROLLED VEHICLE BODY MOTION</div>
+      </div>
+
+      <h2 style="font-family:var(--font-heading);font-size:clamp(2.2rem,5vw,3.6rem);font-weight:900;margin-bottom:1.5rem;line-height:1.1;">
+        THE EQUATION <span style="color:var(--accent-orange);">EXPLAINS</span> THE RIDE.
+      </h2>
+      <p style="font-size:1.1rem;color:var(--text-secondary);line-height:1.9;margin-bottom:2.5rem;">
+        From physical coiled steel and hydraulic orifice friction to second-order differential equations — mathematics allows engineers to predict, tune, and optimize vehicle safety and passenger comfort before manufacturing hardware.
+      </p>
+
+      <button class="btn-primary" onclick="document.getElementById('lab').scrollIntoView({behavior:'smooth'})">
+        Return to Simulation
+      </button>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ─── -->
+  <footer>
+    <div class="footer-eq">\[ mx'' + cx' + kx = F(t) \]</div>
+    <div class="footer-text">
+      "Life is complex; it has both real and imaginary components."
+    </div>
+      </footer>
+
+  <!-- ─── EDITABLE PROJECT METADATA MODAL ─── -->
+  <div class="modal-overlay" id="project-modal">
+    <div class="modal-card">
+      <div class="modal-title">Personalize Project Information</div>
+      <div class="modal-sub">Update project credentials for academic evaluation and grading.</div>
+
+      <div class="modal-form-grid">
+        <div class="form-group">
+          <label class="form-label">Student Name / Group</label>
+          <input type="text" class="form-input" id="inp-student" value="Automotive Engineering Group A">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Registration / Roll Number</label>
+          <input type="text" class="form-input" id="inp-reg" value="ENGR-MATH-2026">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Department</label>
+          <input type="text" class="form-input" id="inp-dept" value="Dept. of Mechanical Engineering">
+        </div>
+        <div class="form-group">
+          <label class="form-label">College / University</label>
+          <input type="text" class="form-input" id="inp-univ" value="University of Technology">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Faculty Guide</label>
+          <input type="text" class="form-input" id="inp-guide" value="Prof. Vehicle Dynamics">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Course Code &amp; Academic Year</label>
+          <input type="text" class="form-input" id="inp-course" value="ME-302 · 2026">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:1.5rem;">
+        <label class="form-label">Project Title</label>
+        <input type="text" class="form-input" id="inp-title" value="Quarter-Car Suspension Dynamics &amp; 2nd-Order ODEs">
+      </div>
+
+      <div class="modal-actions">
+        <button class="hud-btn" onclick="closeProjectModal()">Cancel</button>
+        <button class="btn-primary" style="padding:0.5rem 1.4rem;font-size:0.78rem;" onclick="saveProjectModal()">Save Credentials</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── MODULAR SCRIPTS ─── -->
+  <script src="three-suspension.js"></script>
+  <script src="shock-absorber.js"></script>
+
+  <!-- ─── CORE LOGIC, 2D CAD BLUEPRINT & INTEGRATION SCRIPT ─── -->
+  <script>
+    // ═══════════════════════════════════════════════════════
+    //  PHYSICS ENGINE — RK4 QUARTER-CAR ODE INTEGRATION
+    // ═══════════════════════════════════════════════════════
+    const SIM = {
+      m: 2, c: 32, k: 128, v0: 0.6, F0: 0, omega: 5,
+      t: 0, x: 0, v: 0,
+      playing: true, slowMo: false, showForces: true,
+      roadMode: 0,
+      roadNames: ['FLAT', 'SMALL BUMP', 'LARGE BUMP', 'SPEED BUMP', 'CORRUGATED'],
+      solution: [],
+      solutionIdx: 0,
+      DT: 0.001,
+      T_TOTAL: 8,
+
+      compute() {
+        const { m, c, k, v0, F0, omega, DT, T_TOTAL } = this;
+        const N = Math.floor(T_TOTAL / DT);
+        const sol = new Float64Array(N * 2);
+        sol[0] = 0; // x(0) = 0
+        sol[1] = v0; // x'(0) = v0
+
+        for (let i = 0; i < N - 1; i++) {
+          const ti = i * DT;
+          const xi = sol[i * 2], vi = sol[i * 2 + 1];
+
+          const f = (t, x, v) => {
+            const Ft = F0 * Math.cos(omega * t);
+            return (Ft - c * v - k * x) / m;
+          };
+
+          const k1x = vi, k1v = f(ti, xi, vi);
+          const k2x = vi + DT * k1v / 2, k2v = f(ti + DT / 2, xi + DT * k1x / 2, vi + DT * k1v / 2);
+          const k3x = vi + DT * k2v / 2, k3v = f(ti + DT / 2, xi + DT * k2x / 2, vi + DT * k2v / 2);
+          const k4x = vi + DT * k3v,   k4v = f(ti + DT, xi + DT * k3x, vi + DT * k3v);
+
+          sol[(i + 1) * 2]     = xi + (DT / 6) * (k1x + 2 * k2x + 2 * k3x + k4x);
+          sol[(i + 1) * 2 + 1] = vi + (DT / 6) * (k1v + 2 * k2v + 2 * k3v + k4v);
+        }
+        this.solution = sol;
+        this.solutionIdx = 0;
+        this.t = 0;
+      },
+
+      reset() {
+        this.solutionIdx = 0;
+        this.t = 0;
+        this.compute();
+      },
+
+      step() {
+        const stepsPerFrame = this.slowMo ? 1 : (this.playing ? 4 : 0);
+        for (let i = 0; i < stepsPerFrame; i++) {
+          if (this.solutionIdx >= (this.solution.length / 2) - 1) {
+            this.solutionIdx = 0;
+          }
+          this.solutionIdx++;
+        }
+        this.t = this.solutionIdx * this.DT;
+        this.x = this.solution[this.solutionIdx * 2];
+        this.v = this.solution[this.solutionIdx * 2 + 1];
+      },
+
+      getX(idx) { return this.solution[idx * 2] || 0; },
+      getV(idx) { return this.solution[idx * 2 + 1] || 0; },
+
+      get ccrit() { return 2 * Math.sqrt(this.m * this.k); },
+      get wn()    { return Math.sqrt(this.k / this.m); },
+      get zeta()  { return this.c / (2 * Math.sqrt(this.m * this.k)); },
+      get D()     { return this.c * this.c - 4 * this.m * this.k; },
+      get regime(){
+        const D = this.D;
+        if (Math.abs(this.c) < 0.01) return 'zero';
+        return D < -0.1 ? 'under' : D > 0.1 ? 'over' : 'crit';
+      },
+      get Fs() { return this.k * this.x; },
+      get Fd() { return this.c * this.v; },
+      get Ft() { return this.F0 * Math.cos(this.omega * this.t); }
+    };
+
+    // ═══════════════════════════════════════════════════════
+    //  VIEW MODE SWITCHING: 3D THREE.JS vs 2D CAD BLUEPRINT
+    // ═══════════════════════════════════════════════════════
+    let currentViewMode = '3d';
+
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      const threeCont = document.getElementById('three-canvas-container');
+      const canvas2d = document.getElementById('susp-canvas');
+      const hudControls = document.getElementById('three-controls-hud');
+      const modeLabel = document.getElementById('viewport-mode-label');
+
+      if (mode === '3d') {
+        threeCont.style.display = 'block';
+        canvas2d.style.display = 'none';
+        hudControls.style.display = 'flex';
+        modeLabel.textContent = '3D View Mode';
+        ThreeSuspension.active = true;
+        document.getElementById('toggle-3d-btn').classList.add('active');
+        document.getElementById('toggle-2d-btn').classList.remove('active');
+      } else {
+        threeCont.style.display = 'none';
+        canvas2d.style.display = 'block';
+        hudControls.style.display = 'none';
+        modeLabel.textContent = '2D CAD Blueprint Mode';
+        ThreeSuspension.active = false;
+        document.getElementById('toggle-3d-btn').classList.remove('active');
+        document.getElementById('toggle-2d-btn').classList.add('active');
+      }
+    }
+
+    function toggleExplodedView() {
+      const active = ThreeSuspension.toggleExploded();
+      const btn = document.getElementById('btn-exploded');
+      btn.classList.toggle('active', active);
+    }
+
+    function toggleCutawayView() {
+      const active = ThreeSuspension.toggleCutaway();
+      const btn = document.getElementById('btn-cutaway');
+      btn.classList.toggle('active', active);
+    }
+
+    function toggleAutoRotate() {
+      const active = ThreeSuspension.toggleAutoRotate();
+      const btn = document.getElementById('btn-autorotate');
+      btn.classList.toggle('active', active);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  2D PRECISION CAD BLUEPRINT RENDERER
+    // ═══════════════════════════════════════════════════════
+    const canvas2D = document.getElementById('susp-canvas');
+    const ctx2D = canvas2D.getContext('2d');
+
+    function resize2DCanvas() {
+      const wrapper = document.getElementById('susp-viewport-wrapper');
+      const w = wrapper.clientWidth;
+      const h = wrapper.clientHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas2D.width = w * dpr;
+      canvas2D.height = h * dpr;
+      ctx2D.scale(dpr, dpr);
+    }
+
+    function render2DBlueprint() {
+      if (currentViewMode !== '2d') return;
+
+      const W = canvas2D.clientWidth;
+      const H = canvas2D.clientHeight;
+      ctx2D.clearRect(0, 0, W, H);
+
+      // Blueprint dark cyan grid
+      ctx2D.fillStyle = '#0a101d';
+      ctx2D.fillRect(0, 0, W, H);
+      ctx2D.strokeStyle = 'rgba(56, 189, 248, 0.05)';
+      ctx2D.lineWidth = 1;
+      for (let x = 0; x < W; x += 30) { ctx2D.beginPath(); ctx2D.moveTo(x, 0); ctx2D.lineTo(x, H); ctx2D.stroke(); }
+      for (let y = 0; y < H; y += 30) { ctx2D.beginPath(); ctx2D.moveTo(0, y); ctx2D.lineTo(W, y); ctx2D.stroke(); }
+
+      const cx = W * 0.45;
+      const roadY = H - 65;
+
+      // 2D Bump profile and ground calculation
+      let roadBumpLift = 0;
+      if (SIM.roadMode > 0) {
+        const bumpCycleW = W + 240;
+        const scroll2D = (SIM.t * (SIM.slowMo ? 90 : 220)) % bumpCycleW;
+        const bumpX = (W + 120) - scroll2D;
+        const bumpW = [0, 75, 130, 170, 80][SIM.roadMode] || 90;
+        const bumpH = [0, 18, 38, 28, 14][SIM.roadMode] || 22;
+
+        // Draw 2D Bump Arc / Curve
+        ctx2D.beginPath();
+        ctx2D.moveTo(bumpX - bumpW, roadY);
+        ctx2D.quadraticCurveTo(bumpX, roadY - bumpH * 2, bumpX + bumpW, roadY);
+        ctx2D.fillStyle = 'rgba(245, 158, 11, 0.15)';
+        ctx2D.fill();
+        ctx2D.strokeStyle = '#f59e0b';
+        ctx2D.lineWidth = 2.5;
+        ctx2D.stroke();
+
+        // Calculate ground lift directly under wheel center cx
+        const dx = cx - bumpX;
+        if (Math.abs(dx) <= bumpW) {
+          roadBumpLift = bumpH * Math.pow(Math.cos((dx / bumpW) * (Math.PI / 2)), 2);
+        }
+      }
+
+      // Wheel (2D) tracks bump lift
+      const wheelR = 48;
+      const wheelCenterY = (roadY - wheelR) - roadBumpLift;
+
+      const dispPx = SIM.x * 95;
+      const bodyY = H * 0.12 + dispPx;
+
+      // Chassis Body (2D)
+      ctx2D.strokeStyle = '#38bdf8';
+      ctx2D.lineWidth = 2;
+      ctx2D.strokeRect(cx - 100, bodyY, 200, 45);
+      ctx2D.fillStyle = 'rgba(56, 189, 248, 0.08)';
+      ctx2D.fillRect(cx - 100, bodyY, 200, 45);
+      ctx2D.fillStyle = '#38bdf8';
+      ctx2D.font = '700 11px JetBrains Mono, monospace';
+      ctx2D.fillText('CHASSIS MASS m = ' + SIM.m + ' kg', cx - 75, bodyY + 26);
+
+      // Spring (2D) compresses between chassis and moving wheel axle
+      const springTop = bodyY + 45;
+      const springBot = wheelCenterY - 24;
+      const coils = 8;
+      const step = (springBot - springTop) / (coils * 2);
+      ctx2D.beginPath();
+      ctx2D.strokeStyle = '#fb923c';
+      ctx2D.lineWidth = 3;
+      ctx2D.moveTo(cx + 25, springTop);
+      for (let i = 0; i < coils * 2; i++) {
+        const sx = i % 2 === 0 ? cx + 45 : cx + 5;
+        ctx2D.lineTo(sx, springTop + (i + 1) * step);
+      }
+      ctx2D.lineTo(cx + 25, springBot);
+      ctx2D.stroke();
+
+      // Damper (2D)
+      const dampTop = bodyY + 45;
+      const dampBot = wheelCenterY - 24;
+      const cylTop = dampBot - 80;
+      ctx2D.strokeStyle = '#60a5fa';
+      ctx2D.lineWidth = 2;
+      ctx2D.strokeRect(cx - 50, cylTop, 30, 80);
+      ctx2D.beginPath();
+      ctx2D.moveTo(cx - 35, dampTop);
+      ctx2D.lineTo(cx - 35, cylTop + 30 + SIM.v * 25);
+      ctx2D.stroke();
+
+      // Wheel (2D)
+      ctx2D.beginPath();
+      ctx2D.arc(cx, wheelCenterY, wheelR, 0, Math.PI * 2);
+      ctx2D.strokeStyle = '#9ca3af';
+      ctx2D.lineWidth = 3;
+      ctx2D.stroke();
+      ctx2D.fillStyle = 'rgba(156, 163, 175, 0.08)';
+      ctx2D.fill();
+
+      // Wheel hub center dot
+      ctx2D.beginPath();
+      ctx2D.arc(cx, wheelCenterY, 5, 0, Math.PI * 2);
+      ctx2D.fillStyle = '#f59e0b';
+      ctx2D.fill();
+
+      // Road Surface
+      ctx2D.beginPath();
+      ctx2D.moveTo(0, roadY);
+      ctx2D.lineTo(W, roadY);
+      ctx2D.strokeStyle = '#64748b';
+      ctx2D.lineWidth = 2;
+      ctx2D.stroke();
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  GRAPHS ENGINE (DISPLACEMENT, VELOCITY, PHASE PORTRAIT)
+    // ═══════════════════════════════════════════════════════
+    function renderGraphs() {
+      // 1. DISPLACEMENT GRAPH
+      const canvasD = document.getElementById('disp-graph');
+      const ctxD = canvasD.getContext('2d');
+      const wD = canvasD.clientWidth;
+      const hD = canvasD.clientHeight;
+      if (canvasD.width !== wD) { canvasD.width = wD; canvasD.height = hD; }
+
+      ctxD.fillStyle = '#0f1016';
+      ctxD.fillRect(0, 0, wD, hD);
+
+      const midD = hD / 2;
+      ctxD.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctxD.setLineDash([4, 4]);
+      ctxD.beginPath(); ctxD.moveTo(0, midD); ctxD.lineTo(wD, midD); ctxD.stroke();
+      ctxD.setLineDash([]);
+
+      const N = Math.min(SIM.solution.length / 2, 4000);
+      let maxVal = 0.001;
+      for (let i = 0; i < N; i++) maxVal = Math.max(maxVal, Math.abs(SIM.getX(i)));
+      const scaleD = (hD * 0.42) / maxVal;
+
+      ctxD.beginPath();
+      ctxD.strokeStyle = '#fb923c';
+      ctxD.lineWidth = 2;
+      for (let i = 0; i < N; i++) {
+        const gx = (i / N) * wD;
+        const gy = midD - SIM.getX(i) * scaleD;
+        i === 0 ? ctxD.moveTo(gx, gy) : ctxD.lineTo(gx, gy);
+      }
+      ctxD.stroke();
+
+      // Current Time Tracker Line
+      const curX = (SIM.solutionIdx / N) * wD;
+      ctxD.beginPath();
+      ctxD.strokeStyle = 'rgba(251, 146, 60, 0.8)';
+      ctxD.moveTo(curX, 0); ctxD.lineTo(curX, hD);
+      ctxD.stroke();
+
+      // Current Point Dot
+      const curY = midD - SIM.x * scaleD;
+      ctxD.beginPath();
+      ctxD.arc(curX, curY, 4, 0, Math.PI * 2);
+      ctxD.fillStyle = '#fff';
+      ctxD.fill();
+
+      // Update Peak & Settling Label
+      let peak = 0;
+      for (let i = 0; i < N; i++) peak = Math.max(peak, Math.abs(SIM.getX(i)));
+      document.getElementById('peak-settle-info').textContent =
+        `Peak: ${peak.toFixed(4)}m | Settling: ${(SIM.wn > 0 ? (4 / (SIM.zeta * SIM.wn)).toFixed(2) : '∞')}s`;
+
+      // 2. VELOCITY GRAPH
+      const canvasV = document.getElementById('vel-graph');
+      const ctxV = canvasV.getContext('2d');
+      const wV = canvasV.clientWidth, hV = canvasV.clientHeight;
+      if (canvasV.width !== wV) { canvasV.width = wV; canvasV.height = hV; }
+
+      ctxV.fillStyle = '#0f1016';
+      ctxV.fillRect(0, 0, wV, hV);
+      const midV = hV / 2;
+
+      let maxV = 0.001;
+      for (let i = 0; i < N; i++) maxV = Math.max(maxV, Math.abs(SIM.getV(i)));
+      const scaleV = (hV * 0.42) / maxV;
+
+      ctxV.beginPath();
+      ctxV.strokeStyle = '#60a5fa';
+      ctxV.lineWidth = 1.6;
+      for (let i = 0; i < N; i++) {
+        const gx = (i / N) * wV;
+        const gy = midV - SIM.getV(i) * scaleV;
+        i === 0 ? ctxV.moveTo(gx, gy) : ctxV.lineTo(gx, gy);
+      }
+      ctxV.stroke();
+
+      // 3. PHASE PORTRAIT GRAPH (x' vs x)
+      const canvasP = document.getElementById('phase-graph');
+      const ctxP = canvasP.getContext('2d');
+      const wP = canvasP.clientWidth, hP = canvasP.clientHeight;
+      if (canvasP.width !== wP) { canvasP.width = wP; canvasP.height = hP; }
+
+      ctxP.fillStyle = '#0f1016';
+      ctxP.fillRect(0, 0, wP, hP);
+      const midPx = wP / 2, midPy = hP / 2;
+
+      ctxP.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+      ctxP.beginPath(); ctxP.moveTo(midPx, 0); ctxP.lineTo(midPx, hP); ctxP.stroke();
+      ctxP.beginPath(); ctxP.moveTo(0, midPy); ctxP.lineTo(wP, midPy); ctxP.stroke();
+
+      const sPx = (wP * 0.42) / maxVal;
+      const sPy = (hP * 0.42) / maxV;
+
+      ctxP.beginPath();
+      ctxP.strokeStyle = '#c084fc';
+      ctxP.lineWidth = 1.4;
+      for (let i = 0; i < N; i++) {
+        const px = midPx + SIM.getX(i) * sPx;
+        const py = midPy - SIM.getV(i) * sPy;
+        i === 0 ? ctxP.moveTo(px, py) : ctxP.lineTo(px, py);
+      }
+      ctxP.stroke();
+
+      // Current Phase Point
+      const curPx = midPx + SIM.x * sPx;
+      const curPy = midPy - SIM.v * sPy;
+      ctxP.beginPath();
+      ctxP.arc(curPx, curPy, 4.5, 0, Math.PI * 2);
+      ctxP.fillStyle = '#fff';
+      ctxP.fill();
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  THREE-WAY COMPARISON SYNCHRONIZATION
+    // ═══════════════════════════════════════════════════════
+    let compSolutions = {};
+    let compActive = false;
+    let compFrame = 0;
+
+    function solvePreset(cVal) {
+      const DT = 0.001, N = 4000;
+      const sol = new Float64Array(N);
+      let x = 0, v = 0.6;
+      for (let i = 0; i < N; i++) {
+        sol[i] = x;
+        const k1v = (-cVal * v - 128 * x) / 2;
+        const k1x = v;
+        const k2v = (-cVal * (v + 0.5 * DT * k1v) - 128 * (x + 0.5 * DT * k1x)) / 2;
+        const k2x = v + 0.5 * DT * k1v;
+        const k3v = (-cVal * (v + 0.5 * DT * k2v) - 128 * (x + 0.5 * DT * k2x)) / 2;
+        const k3x = v + 0.5 * DT * k2v;
+        const k4v = (-cVal * (v + DT * k3v) - 128 * (x + DT * k3x)) / 2;
+        const k4x = v + DT * k3v;
+
+        x += (DT / 6) * (k1x + 2 * k2x + 2 * k3x + k4x);
+        v += (DT / 6) * (k1v + 2 * k2v + 2 * k3v + k4v);
+      }
+      return sol;
+    }
+
+    function initComparison() {
+      compSolutions.under = solvePreset(8);
+      compSolutions.crit = solvePreset(32);
+      compSolutions.over = solvePreset(40);
+      renderAllCompCanvases();
+    }
+
+    function triggerComparisonBump() {
+      compFrame = 0;
+      compActive = true;
+    }
+
+    function resetComparison() {
+      compFrame = 0;
+      compActive = false;
+      renderAllCompCanvases();
+    }
+
+    function renderCompCanvas(id, sol, color) {
+      const c = document.getElementById(id);
+      if (!c) return;
+      const ctx = c.getContext('2d');
+      const W = c.clientWidth, H = c.clientHeight;
+      if (c.width !== W) { c.width = W; c.height = H; }
+
+      ctx.fillStyle = '#0c0d12';
+      ctx.fillRect(0, 0, W, H);
+      const mid = H / 2;
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(W, mid); ctx.stroke();
+
+      const N = sol.length;
+      let maxVal = 0.04;
+      const scale = (H * 0.4) / maxVal;
+
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      const endIdx = compActive ? Math.min(compFrame * 6, N) : N;
+      for (let i = 0; i < endIdx; i++) {
+        const x = (i / N) * W;
+        const y = mid - sol[i] * scale;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Animated Suspension Graphic on Right
+      const curIdx = compActive ? Math.min(compFrame * 6, N - 1) : 0;
+      const curDisp = sol[curIdx];
+      const suspX = W - 50;
+      const springTop = 30 + curDisp * 120;
+      const springBot = H - 35;
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(suspX, springTop);
+      for (let k = 1; k <= 8; k++) {
+        const sy = springTop + (k / 9) * (springBot - springTop);
+        const sx = k % 2 === 0 ? suspX + 10 : suspX - 10;
+        ctx.lineTo(sx, sy);
+      }
+      ctx.lineTo(suspX, springBot);
+      ctx.stroke();
+
+      // Wheel
+      ctx.beginPath();
+      ctx.arc(suspX, springBot + 14, 14, 0, Math.PI * 2);
+      ctx.fillStyle = '#1e293b'; ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+    }
+
+    function renderAllCompCanvases() {
+      if (compActive) compFrame++;
+      renderCompCanvas('comp-canvas-under', compSolutions.under, '#60a5fa');
+      renderCompCanvas('comp-canvas-crit', compSolutions.crit, '#4ade80');
+      renderCompCanvas('comp-canvas-over', compSolutions.over, '#c084fc');
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  RESONANCE FREQUENCY SWEEP
+    // ═══════════════════════════════════════════════════════
+    let resOmega = 5, resF0 = 20;
+
+    function renderResonanceGraph() {
+      const c = document.getElementById('freq-graph');
+      if (!c) return;
+      const ctx = c.getContext('2d');
+      const W = c.clientWidth, H = c.clientHeight;
+      if (c.width !== W) { c.width = W; c.height = H; }
+
+      ctx.fillStyle = '#0f1016';
+      ctx.fillRect(0, 0, W, H);
+
+      const m = SIM.m, k = SIM.k, damp = SIM.c;
+      const wn = Math.sqrt(k / m);
+      const wMax = 30;
+
+      // Draw Curve
+      let maxAmp = 0.001;
+      const pts = [];
+      for (let i = 0; i <= 250; i++) {
+        const w = (i / 250) * wMax;
+        const denom = Math.sqrt(Math.pow(k - m * w * w, 2) + Math.pow(damp * w, 2));
+        const A = resF0 / Math.max(0.01, denom);
+        pts.push({ w, A });
+        maxAmp = Math.max(maxAmp, A);
+      }
+
+      // Grid
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.beginPath(); ctx.moveTo(0, H - 25); ctx.lineTo(W, H - 25); ctx.stroke();
+
+      // Resonance Marker Line (wn)
+      const wnX = (wn / wMax) * W;
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(74, 222, 128, 0.5)';
+      ctx.setLineDash([4, 4]);
+      ctx.moveTo(wnX, 0); ctx.lineTo(wnX, H - 25);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#4ade80';
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.fillText(`wn = ${wn.toFixed(1)} rad/s`, wnX + 6, 20);
+
+      // Amplitude Curve
+      ctx.beginPath();
+      ctx.strokeStyle = '#fb923c';
+      ctx.lineWidth = 2.5;
+      pts.forEach((p, idx) => {
+        const gx = (p.w / wMax) * W;
+        const gy = (H - 30) - (p.A / maxAmp) * (H - 55);
+        idx === 0 ? ctx.moveTo(gx, gy) : ctx.lineTo(gx, gy);
+      });
+      ctx.stroke();
+
+      // Current Operating Point
+      const curX = (resOmega / wMax) * W;
+      const curDenom = Math.sqrt(Math.pow(k - m * resOmega * resOmega, 2) + Math.pow(damp * resOmega, 2));
+      const curAmp = resF0 / Math.max(0.01, curDenom);
+      const curY = (H - 30) - (curAmp / maxAmp) * (H - 55);
+
+      ctx.beginPath();
+      ctx.arc(curX, curY, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#fb923c';
+      ctx.fill();
+    }
+
+    function updateResonance(val) {
+      resOmega = parseFloat(val);
+      document.getElementById('res-omega-val').textContent = resOmega.toFixed(1) + ' rad/s';
+      const ratio = resOmega / SIM.wn;
+      document.getElementById('res-ratio-display').textContent = ratio.toFixed(3);
+      document.getElementById('calc-ratio').textContent = ratio.toFixed(3);
+
+      const statusEl = document.getElementById('res-status');
+      const indEl = document.getElementById('resonance-indicator');
+      if (Math.abs(ratio - 1.0) < 0.15) {
+        indEl.classList.add('danger');
+        statusEl.textContent = '⚠ RESONANCE DETECTED: Excitation matches natural frequency! Amplitude spikes to extreme maximum!';
+        statusEl.style.color = 'var(--accent-red)';
+      } else {
+        indEl.classList.remove('danger');
+        statusEl.textContent = ratio < 1.0 ? 'Sub-resonant frequency band — stable low amplitude.' : 'Super-resonant band — inertial mass isolation.';
+        statusEl.style.color = 'var(--text-secondary)';
+      }
+
+      // Sync simulation omega
+      updateParam('omega', val);
+      document.getElementById('sl-omega').value = val;
+      document.getElementById('val-omega').textContent = parseFloat(val).toFixed(0);
+      renderResonanceGraph();
+    }
+
+    function updateResonanceF0(val) {
+      resF0 = parseFloat(val);
+      document.getElementById('res-F0-val').textContent = resF0 + ' N';
+      updateParam('F0', val);
+      document.getElementById('sl-F0').value = val;
+      document.getElementById('val-F0').textContent = val;
+      renderResonanceGraph();
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  SUSPENSION ARCHITECTURES TAB SWITCHER
+    // ═══════════════════════════════════════════════════════
+    const ARCH_DATA = {
+      'macpherson': {
+        badge: 'MOST COMMON PASSENGER FRONT AXLE',
+        title: 'MacPherson Strut',
+        desc: 'Invented by Earle S. MacPherson at Ford in the late 1940s. Combines the shock absorber, spring, and steering knuckle into a single compact vertical load-bearing strut assembly, supported by one lower control arm.',
+        pros: 'Low manufacturing cost, ultra-compact packaging leaving room for transverse engines, low weight.',
+        cons: 'Camber angle changes with body roll; transmits strut vibration directly into top unibody sheet metal.',
+        apps: 'BMW 3-Series, Porsche 911 (Front), Toyota Corolla',
+        diagTitle: 'MacPherson Strut Kinematics',
+        diagText: 'Direct vertical alignment where damper tube acts as the structural kingpin. Single lower A-arm wishbone controls lateral location.'
+      },
+      'double-wishbone': {
+        badge: 'FORMULA 1 & PERFORMANCE VEHICLES',
+        title: 'Double Wishbone (A-Arm)',
+        desc: 'Utilizes two unequal-length parallel wishbone control arms (upper and lower). Allows mechanical engineers to tune camber angle, caster, and roll center independently throughout total suspension travel.',
+        pros: 'Negative camber gain under cornering compression keeps tire contact patch completely flat; decouples suspension loads from body shocks.',
+        cons: 'More expensive, complex assembly with multiple ball joints and bushings, takes up substantial lateral engine bay room.',
+        apps: 'Formula 1 cars, Ferrari F8, Mazda MX-5 Miata, Audi R8',
+        diagTitle: 'Parallel A-Arm Geometry',
+        diagText: 'Short upper arm and long lower arm design induces negative camber when body rolls, providing maximum cornering grip.'
+      },
+      'multilink': {
+        badge: 'PREMIUM INDEPENDENT REAR SUSPENSION',
+        title: 'Multi-Link Suspension',
+        desc: 'An evolution of double-wishbone using three, four, or five discrete control links with elastomeric bushings. Each link controls a single specific degree of freedom in wheel movement.',
+        pros: 'Unsurpassed balance of high-speed stability, cornering precision, and road isolation compliance.',
+        cons: 'High design complexity, multiple rubber bushings prone to wear, expensive alignment procedures.',
+        apps: 'Mercedes-Benz S-Class, BMW 5-Series, Porsche Taycan',
+        diagTitle: '5-Link Spatially Decoupled Joints',
+        diagText: 'Independent spherical control arms manage longitudinal braking forces separately from lateral cornering loads.'
+      },
+      'torsion': {
+        badge: 'ECONOMICAL COMPACT REAR AXLE',
+        title: 'Torsion Beam (Twist Beam)',
+        desc: 'Semi-independent suspension featuring two trailing arms rigidly joined by a crosswise torsion beam that twists under one-sided wheel displacement, acting as its own integral anti-roll bar.',
+        pros: 'Ultra-low cost, extremely robust, minimal moving parts, maximizes trunk and rear seat room.',
+        cons: 'One wheel movement partially affects the opposite wheel; camber changes cannot be adjusted.',
+        apps: 'Volkswagen Golf (Base), Honda Civic, Ford Fiesta',
+        diagTitle: 'Twisting Crossmember Kinematics',
+        diagText: 'Flexible H-beam twists under roll loads to resist body lean without needing a separate anti-roll sway bar.'
+      },
+      'air': {
+        badge: 'ADAPTIVE LUXURY & VARIABLE RIDE HEIGHT',
+        title: 'Adaptive Air Suspension',
+        desc: 'Replaces conventional steel coil springs with polyurethane air bellows pressurized by an onboard compressor. Allows dynamic spring rate variation, active auto-leveling, and high-speed aerodynamic lowering.',
+        pros: 'Unmatched plush carpet ride comfort, variable ground clearance for off-road or track aerodynamics.',
+        cons: 'High cost, pneumatic leaks, compressor failure risk, complex electronic valve manifolds.',
+        apps: 'Range Rover, Tesla Model S, Mercedes-Maybach',
+        diagTitle: 'Pressurized Pneumatic Bellows',
+        diagText: 'Compressor regulates reservoir pressure to adjust ride height and dynamic spring rate on the fly.'
+      }
+    };
+
+    function switchArch(key) {
+      const d = ARCH_DATA[key];
+      if (!d) return;
+
+      document.querySelectorAll('.arch-tab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+
+      document.getElementById('arch-badge').textContent = d.badge;
+      document.getElementById('arch-title').textContent = d.title;
+      document.getElementById('arch-desc').textContent = d.desc;
+      document.getElementById('arch-pros').textContent = d.pros;
+      document.getElementById('arch-cons').textContent = d.cons;
+      document.getElementById('arch-apps').textContent = d.apps;
+      document.getElementById('arch-diagram-title').textContent = d.diagTitle;
+      document.getElementById('arch-diagram-text').textContent = d.diagText;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  "BREAK THE SUSPENSION" MODES
+    // ═══════════════════════════════════════════════════════
+    function triggerBreakMode(mode) {
+      document.querySelectorAll('.break-card').forEach(c => c.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      switch (mode) {
+        case 'zero':
+          applyPreset('zero');
+          break;
+        case 'soft':
+          SIM.k = 40; SIM.c = 3; SIM.m = 4; SIM.v0 = 0.8;
+          updateAllControlsFromSIM();
+          break;
+        case 'stiff':
+          SIM.k = 300; SIM.c = 75; SIM.m = 1.5; SIM.v0 = 1.2;
+          updateAllControlsFromSIM();
+          break;
+        case 'resonance':
+          SIM.c = 4; SIM.F0 = 35; SIM.omega = 8.0;
+          updateAllControlsFromSIM();
+          break;
+        case 'pothole':
+          SIM.v0 = 1.5; SIM.m = 5.5; SIM.c = 20;
+          updateAllControlsFromSIM();
+          break;
+      }
+      document.getElementById('lab').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function updateAllControlsFromSIM() {
+      document.getElementById('sl-c').value = SIM.c;
+      document.getElementById('sl-m').value = SIM.m;
+      document.getElementById('sl-k').value = SIM.k;
+      document.getElementById('sl-v0').value = SIM.v0;
+      document.getElementById('sl-F0').value = SIM.F0;
+      document.getElementById('sl-omega').value = SIM.omega;
+      document.getElementById('val-c').textContent = SIM.c;
+      document.getElementById('val-m').textContent = SIM.m;
+      document.getElementById('val-k').textContent = SIM.k;
+      document.getElementById('val-v0').textContent = SIM.v0;
+      document.getElementById('val-F0').textContent = SIM.F0;
+      document.getElementById('val-omega').textContent = SIM.omega;
+      SIM.compute();
+      updateDerivedDisplay();
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  PARAMETER & PRESET CONTROLS
+    // ═══════════════════════════════════════════════════════
+    function updateParam(name, val) {
+      SIM[name] = parseFloat(val);
+      document.getElementById('val-' + name).textContent =
+        parseFloat(val).toFixed(name === 'v0' ? 2 : name === 'omega' ? 0 : 0);
+      SIM.compute();
+      updateDerivedDisplay();
+    }
+
+    function updateDerivedDisplay() {
+      const { ccrit, wn, zeta, D, regime } = SIM;
+      document.getElementById('calc-ccrit').textContent = ccrit.toFixed(2) + ' N·s/m';
+      document.getElementById('calc-wn').textContent = wn.toFixed(3) + ' rad/s';
+      document.getElementById('calc-zeta').textContent = zeta.toFixed(3);
+      document.getElementById('calc-disc').textContent = D.toFixed(1);
+      document.getElementById('calc-ratio').textContent = (SIM.omega / wn).toFixed(3);
+
+      const marker = document.getElementById('disc-marker');
+      const pos = Math.max(3, Math.min(97, 50 + ((SIM.c - ccrit) / ccrit) * 35));
+      marker.style.left = pos + '%';
+
+      const badge = document.getElementById('regime-badge');
+      const labels = {
+        under: '● UNDERDAMPED (BOUNCY)',
+        crit: '● CRITICALLY DAMPED ★',
+        over: '● OVERDAMPED (SLUGGISH)',
+        zero: '● UNDAMPED (PERPETUAL)'
+      };
+      badge.className = 'regime-badge regime-' + regime;
+      badge.textContent = labels[regime];
+
+      renderResonanceGraph();
+    }
+
+    function applyPreset(type) {
+      const presets = {
+        under: { c: 8,  m: 2, k: 128, v0: 0.6, F0: 0, omega: 5 },
+        crit:  { c: 32, m: 2, k: 128, v0: 0.6, F0: 0, omega: 5 },
+        over:  { c: 40, m: 2, k: 128, v0: 0.6, F0: 0, omega: 5 },
+        zero:  { c: 0,  m: 2, k: 128, v0: 0.5, F0: 0, omega: 5 }
+      };
+      Object.assign(SIM, presets[type]);
+      updateAllControlsFromSIM();
+
+      ['under', 'crit', 'over', 'zero'].forEach(t => {
+        const btn = document.getElementById('btn-' + t);
+        if (btn) btn.classList.toggle('active', t === type);
+      });
+    }
+
+    function togglePlay() {
+      SIM.playing = !SIM.playing;
+      const btn = document.getElementById('play-btn');
+      btn.textContent = SIM.playing ? '⏸ PAUSE' : '▶ PLAY';
+      btn.classList.toggle('active', SIM.playing);
+    }
+
+    function restartSim() {
+      SIM.reset();
+    }
+
+    function toggleSlow() {
+      SIM.slowMo = !SIM.slowMo;
+      const btn = document.getElementById('slow-btn');
+      btn.classList.toggle('active', SIM.slowMo);
+      btn.textContent = SIM.slowMo ? '🐢 1x SPEED' : '🐢 SLOW MOTION';
+    }
+
+    function toggleForce() {
+      SIM.showForces = !SIM.showForces;
+      const btn = document.getElementById('force-btn');
+      btn.classList.toggle('active', SIM.showForces);
+    }
+
+    function cycleRoad() {
+      SIM.roadMode = (SIM.roadMode + 1) % 5;
+      document.getElementById('road-btn').textContent = '🛣 ROAD: ' + SIM.roadNames[SIM.roadMode];
+    }
+
+    function copyOctaveCode() {
+      const code = document.getElementById('octave-code-text').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = 'COPIED TO CLIPBOARD!';
+        btn.style.color = 'var(--accent-green)';
+        setTimeout(() => { btn.textContent = 'COPY CODE'; btn.style.color = ''; }, 2200);
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  PROJECT METADATA MODAL LOGIC
+    // ═══════════════════════════════════════════════════════
+    function openProjectModal() {
+      document.getElementById('project-modal').classList.add('active');
+    }
+
+    function closeProjectModal() {
+      document.getElementById('project-modal').classList.remove('active');
+    }
+
+    function saveProjectModal() {
+      const title = document.getElementById('inp-title').value;
+      const student = document.getElementById('inp-student').value;
+      const reg = document.getElementById('inp-reg').value;
+      const dept = document.getElementById('inp-dept').value;
+      const univ = document.getElementById('inp-univ').value;
+      const guide = document.getElementById('inp-guide').value;
+
+      document.getElementById('meta-title').textContent = title;
+      document.getElementById('meta-student').textContent = student;
+      document.getElementById('meta-reg').textContent = reg;
+      document.getElementById('meta-dept').textContent = `${dept} · ${univ}`;
+      document.getElementById('meta-guide').textContent = guide;
+
+      closeProjectModal();
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  CENTRAL ANIMATION LOOP
+    // ═══════════════════════════════════════════════════════
+    function mainLoop() {
+      SIM.step();
+
+      // Update Live Telemetry
+      document.getElementById('live-disp').textContent = SIM.x.toFixed(4);
+      document.getElementById('live-vel').textContent  = SIM.v.toFixed(4);
+      document.getElementById('live-fs').textContent   = SIM.Fs.toFixed(2);
+      document.getElementById('live-fd').textContent   = SIM.Fd.toFixed(2);
+
+      // Render Active Viewport (2D Blueprint if active)
+      if (currentViewMode === '2d') {
+        render2DBlueprint();
+      }
+
+      // Render Graphs
+      renderGraphs();
+
+      // Update Shock Absorber Cutaway
+      if (typeof ShockCutaway !== 'undefined') {
+        ShockCutaway.update(SIM.v);
+      }
+
+      // Update 3-Way Comparison
+      renderAllCompCanvases();
+
+      requestAnimationFrame(mainLoop);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  INITIALIZATION
+    // ═══════════════════════════════════════════════════════
+    window.addEventListener('load', () => {
+      // 1. Init Three.js 3D Viewport
+      if (typeof ThreeSuspension !== 'undefined') {
+        ThreeSuspension.init('three-canvas-container');
+      }
+
+      // 2. Init Shock Absorber Cutaway
+      if (typeof ShockCutaway !== 'undefined') {
+        ShockCutaway.init('shock-cutaway-canvas');
+      }
+
+      // 3. Init Physics & Graphs
+      resize2DCanvas();
+      SIM.compute();
+      updateDerivedDisplay();
+      initComparison();
+      renderResonanceGraph();
+
+      // 5. Render MathJax/KaTeX
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true }
+          ]
+        });
+      }
+
+      // 6. Start Main Animation Loop
+      requestAnimationFrame(mainLoop);
+    });
+
+    window.addEventListener('resize', () => {
+      resize2DCanvas();
+      renderResonanceGraph();
+    });
+  </script>
+</body>
+</html>
+
+</body></html>
